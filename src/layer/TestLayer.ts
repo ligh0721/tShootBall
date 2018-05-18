@@ -1,9 +1,7 @@
 class TestLayer extends tutils.Layer {
 	world: p2.World;
-	factor: number = 1;
+	factor: number = 100;
 	tick: number;
-
-	debug: egret.Shape;
 
 	// override
 	protected onCfgStage(): void {
@@ -14,13 +12,10 @@ class TestLayer extends tutils.Layer {
 	protected onInit(): void {
 		let bg = tutils.createBitmapByName("grid100_png");
 		this.addChild(bg);
-		this.debug = new egret.Shape();
-		this.addChild(this.debug);
-		this.debug.graphics.lineStyle(3, 0xffffff);
 
 		this.tick = egret.getTimer();
 		this.createWorld();
-		this.createGround();
+		this.createBounds();
 
 		this.layer.addEventListener(egret.TimerEvent.ENTER_FRAME, this.onEnterFrame, this);
 		this.layer.touchEnabled = true;
@@ -28,94 +23,190 @@ class TestLayer extends tutils.Layer {
 	}
 
 	private onEnterFrame(evt: egret.TimerEvent): void {
-		let now = egret.getTimer();
-		let dt = now - this.tick;
-		this.tick = now;
-		this.world.step(dt);
+		let mx = this.xEgretToP2(this.stage.stageWidth/2);
+		let my = this.yEgretToP2(this.stage.stageHeight/2);
+		// let now = egret.getTimer();
+		// let dt = now - this.tick;
+		// this.tick = now;
+		this.world.step(1/this.stage.frameRate);
 
-		this.debug.graphics.clear();
         for (let i=0; i<this.world.bodies.length; i++) {
             let body = this.world.bodies[i];
-            for (let j=0; j<body.shapes.length; j++) {
-                let shape = body.shapes[j];
-				if (shape instanceof p2.Convex) {
-					this.drawConvex(body, shape);
-				}
+            let shape = body.shapes[0];
+			if (shape instanceof p2.Box || shape instanceof p2.Circle) {
+				let obj = body.displays[0];
+				obj.x = this.xP2ToEgret(body.position[0]);
+				obj.y = this.yP2ToEgret(body.position[1]);
+				obj.rotation = -(body.angle + shape.angle) * tutils.DegPerRad;
+				obj.alpha = body.sleepState===p2.Body.SLEEPING ? 0.5 : 1;
+			} else {
+				continue;
 			}
+			
+			// 万有引力
+			// body.force[0] = 0;
+			// body.force[1] = 0;
+			// for (let j=0; j<this.world.bodies.length; j++) {
+			// 	if (j === i) {
+			// 		continue;
+			// 	}
+			// 	let body2 = this.world.bodies[j];
+			// 	let shape = body2.shapes[0];
+			// 	if (!(shape instanceof p2.Circle)) {
+			// 		continue;
+			// 	}
+			// 	let a = Math.atan2(body2.position[1]-body.position[1], body2.position[0]-body.position[0]);
+			// 	let f = this.calcF(body2, body);
+			// 	body.force[0] += Math.cos(a) * f;
+			// 	body.force[1] += Math.sin(a) * f;
+			// }
 		}
 	}
 
-	private drawConvex(b: p2.Body, shape: p2.Convex): void {
-        let g: egret.Graphics = this.debug.graphics;
-        g.lineStyle(3, 0xffffff);
-        g.beginFill(0x7f7f7f, 0.5);
-
-        let worldPoint: number[] = [];
-        b.toWorldFrame(worldPoint, shape.vertices[0]);
-        //g.moveTo(worldPoint[0], worldPoint[1]);
-		g.moveTo(this.xP2ToEgret(b.position[0]), this.yP2ToEgret(b.position[1]));
-		g.lineTo(this.xP2ToEgret(worldPoint[0]), this.yP2ToEgret(worldPoint[1]));
-        for (let i=1; i<=shape.vertices.length; i++) {
-            b.toWorldFrame(worldPoint, shape.vertices[i % shape.vertices.length]);
-			g.lineTo(this.xP2ToEgret(worldPoint[0]), this.yP2ToEgret(worldPoint[1]));
-        }
-
-        g.endFill();
-    }
-
 	private onTouchBegin(evt: egret.TouchEvent): void {
-		this.createShape(evt.localX, evt.localY);
+		if (Math.random() < 0.5) {
+			this.createBox(evt.localX, evt.localY);
+		} else {
+			this.createCircle(evt.localX, evt.localY);
+		}
 	}
 
 	private lEgretToP2(l: number): number {
-		return l / this.factor;
+		return l/this.factor;
 	}
 
 	private lP2ToEgret(l: number): number {
-		return l * this.factor;
+		return l*this.factor;
 	}
 
 	private xEgretToP2(x: number): number {
-		return x / this.factor;
+		return x/this.factor;
 	}
 
 	private xP2ToEgret(x: number): number {
-		return x * this.factor;
+		return x*this.factor;
 	}
 
 	private yEgretToP2(y: number): number {
-		return -y / this.factor;
+		return -y/this.factor;
 	}
 
 	private yP2ToEgret(y: number): number {
-		return -y * this.factor;
+		return -y*this.factor;
 	}
 
 	private createWorld(): void {
         let world: p2.World = new p2.World();
         world.sleepMode = p2.World.BODY_SLEEPING;
-        world.gravity = [0, 10];
+		world.gravity = [0, -9.8];
+		world.defaultContactMaterial.restitution = 0.8;
+		world.defaultContactMaterial.friction = 10;
+		world.applyDamping = false;
         this.world = world;
     }
 
-	private createGround(): void {
+	private createBounds(): void {
         let h: number = this.stage.stageHeight;
-        let groundShape: p2.Plane = new p2.Plane();
-        let groundBody: p2.Body = new p2.Body();
-		groundBody.position[1] = this.yEgretToP2(h);
-        groundBody.angle = Math.PI;
-        groundBody.addShape(groundShape); 
-        this.world.addBody(groundBody);
+		let w: number = this.stage.stageWidth;
+        let body = new p2.Body();
+		this.world.addBody(body);
+		body.displays = [];
+		body.position[0] = this.xEgretToP2(0);
+		body.position[1] = this.yEgretToP2(h);
+
+		// bottom
+		let shape = new p2.Plane();
+        body.addShape(shape, [0, 0], 0);
+		let obj = new egret.Shape();
+		this.addChild(obj);
+		obj.graphics.lineStyle(3, 0x00ff00);
+		obj.graphics.moveTo(0, h);
+		obj.graphics.lineTo(w, h);
+		body.displays.push(obj);
+
+		// left
+		shape = new p2.Plane();
+        body.addShape(shape, [0, 0], -90/tutils.DegPerRad); 
+		obj = new egret.Shape();
+		this.addChild(obj);
+		obj.graphics.lineStyle(3, 0x00ff00);
+		obj.graphics.moveTo(0, 0);
+		obj.graphics.lineTo(0, h);
+		body.displays.push(obj);
+
+		// right
+		shape = new p2.Plane();
+        body.addShape(shape, [this.xEgretToP2(w), 0], 90/tutils.DegPerRad); 
+		obj = new egret.Shape();
+		this.addChild(obj);
+		obj.graphics.lineStyle(3, 0x00ff00);
+		obj.graphics.moveTo(w, 0);
+		obj.graphics.lineTo(w, h);
+		body.displays.push(obj);
+
+		// top
+		shape = new p2.Plane();
+        body.addShape(shape, [0, this.yEgretToP2(-h)], 180/tutils.DegPerRad); 
+		obj = new egret.Shape();
+		this.addChild(obj);
+		obj.graphics.lineStyle(3, 0x00ff00);
+		obj.graphics.moveTo(0, 0);
+		obj.graphics.lineTo(w, 0);
+		body.displays.push(obj);
     }
 
-	private createShape(x: number, y: number): void {
+	private createBox(x: number, y: number): void {
+		const w = 100;
+		const h = 50;
 		let x2 = this.xEgretToP2(x);
 		let y2 = this.yEgretToP2(y);
-		let w2 = this.lEgretToP2(100);
-		let h2 = this.lEgretToP2(50);
-        let boxShape: p2.Shape = new p2.Box({ width: w2, height: h2 });
-        let boxBody: p2.Body = new p2.Body({ mass: 1, position: [x2, y2], angularVelocity: 0 });
-        boxBody.addShape(boxShape);
-        this.world.addBody(boxBody);
+		let w2 = this.lEgretToP2(w);
+		let h2 = this.lEgretToP2(h);
+        let shape = new p2.Box({ width: w2, height: h2 });
+        let body = new p2.Body({ mass: 1, position: [x2, y2], angularVelocity: 0});
+        body.addShape(shape);
+        this.world.addBody(body);
+
+		let obj = tutils.createBitmapByName("box_png");
+		this.addChild(obj);
+		obj.width = w;
+		obj.height = h;
+		obj.anchorOffsetX = w / 2;
+		obj.anchorOffsetY = h / 2;
+		obj.x = x;
+		obj.y = y;
+
+		body.displays = [obj];
+	}
+
+	private createCircle(x: number, y: number): void {
+		const r = 50;
+		let x2 = this.xEgretToP2(x);
+		let y2 = this.yEgretToP2(y);
+		let r2 = this.lEgretToP2(r);
+        let shape = new p2.Circle({ radius: r2 });
+		let body = new p2.Body({ mass: 1, position: [x2, y2], angularVelocity: 0});
+        body.addShape(shape);
+        this.world.addBody(body);
+
+		let obj = tutils.createBitmapByName("ball_png");
+		this.addChild(obj);
+		obj.width = r * 2;
+		obj.height = r * 2;
+		obj.anchorOffsetX = obj.width / 2;
+		obj.anchorOffsetY = obj.height / 2;
+		obj.x = x;
+		obj.y = y;
+
+		body.displays = [obj];
+	}
+
+	private calcF(body1: p2.Body, body2: p2.Body): number {
+		const G = 6.67408e-11;
+		let dtx = body2.position[0] - body1.position[0];
+		let dty = body2.position[1] - body1.position[1];
+		let dis = Math.sqrt(dtx*dtx+dty*dty);
+		let f = G * body1.mass * body2.mass / dis / dis;
+		return f;
 	}
 }

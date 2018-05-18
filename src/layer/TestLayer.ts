@@ -1,6 +1,6 @@
 class TestLayer extends tutils.Layer {
 	world: p2.World;
-	factor: number = 1.0;
+	factor: number = 1;
 	tick: number;
 
 	debug: egret.Shape;
@@ -28,7 +28,9 @@ class TestLayer extends tutils.Layer {
 	}
 
 	private onEnterFrame(evt: egret.TimerEvent): void {
-		let dt = egret.getTimer() - this.tick;
+		let now = egret.getTimer();
+		let dt = now - this.tick;
+		this.tick = now;
 		this.world.step(dt);
 
 		this.debug.graphics.clear();
@@ -46,7 +48,7 @@ class TestLayer extends tutils.Layer {
 	private drawConvex(b: p2.Body, shape: p2.Convex): void {
         let g: egret.Graphics = this.debug.graphics;
         g.lineStyle(3, 0xffffff);
-        g.beginFill(0x000000, 0.5);
+        g.beginFill(0x7f7f7f, 0.5);
 
         let worldPoint: number[] = [];
         b.toWorldFrame(worldPoint, shape.vertices[0]);

@@ -50,4 +50,8 @@ module tutils {
 		let sound: egret.Sound = RES.getRes(name);
   		sound.play(0, loop);
 	}
+
+	export function getStage(): egret.Stage {
+		return egret.MainContext.instance.stage;
+	}
 }

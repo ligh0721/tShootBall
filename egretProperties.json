@@ -38,6 +38,10 @@
     },
     {
       "name": "promise"
-    }
+    },
+    {
+			"name": "physics",
+			"path": "../egret-libsrc/physics"
+		}
   ]
 }

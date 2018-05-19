@@ -2,6 +2,8 @@ class TestLayer extends tutils.Layer {
 	world: p2.World;
 	factor: number = 100;
 	tick: number;
+	readonly groupBounds = 1 << 1;
+	readonly groupBall = 1 << 2;
 
 	// override
 	protected onCfgStage(): void {
@@ -65,7 +67,8 @@ class TestLayer extends tutils.Layer {
 
 	private onTouchBegin(evt: egret.TouchEvent): void {
 		if (Math.random() < 0.5) {
-			this.createBox(evt.localX, evt.localY);
+			// this.createBox(evt.localX, evt.localY);
+			this.createCircle(evt.localX, evt.localY);
 		} else {
 			this.createCircle(evt.localX, evt.localY);
 		}
@@ -99,8 +102,8 @@ class TestLayer extends tutils.Layer {
         let world: p2.World = new p2.World();
         world.sleepMode = p2.World.BODY_SLEEPING;
 		world.gravity = [0, -9.8];
-		world.defaultContactMaterial.restitution = 0.8;
-		world.defaultContactMaterial.friction = 10;
+		world.defaultContactMaterial.restitution = 1.0;
+		world.defaultContactMaterial.friction = 0;
 		world.applyDamping = false;
         this.world = world;
     }
@@ -117,6 +120,8 @@ class TestLayer extends tutils.Layer {
 		// bottom
 		let shape = new p2.Plane();
         body.addShape(shape, [0, 0], 0);
+		shape.collisionGroup = this.groupBounds;
+		shape.collisionMask = this.groupBall;
 		let obj = new egret.Shape();
 		this.addChild(obj);
 		obj.graphics.lineStyle(3, 0x00ff00);
@@ -127,6 +132,8 @@ class TestLayer extends tutils.Layer {
 		// left
 		shape = new p2.Plane();
         body.addShape(shape, [0, 0], -90/tutils.DegPerRad); 
+		shape.collisionGroup = this.groupBounds;
+		shape.collisionMask = this.groupBall;
 		obj = new egret.Shape();
 		this.addChild(obj);
 		obj.graphics.lineStyle(3, 0x00ff00);
@@ -137,6 +144,8 @@ class TestLayer extends tutils.Layer {
 		// right
 		shape = new p2.Plane();
         body.addShape(shape, [this.xEgretToP2(w), 0], 90/tutils.DegPerRad); 
+		shape.collisionGroup = this.groupBounds;
+		shape.collisionMask = this.groupBall;
 		obj = new egret.Shape();
 		this.addChild(obj);
 		obj.graphics.lineStyle(3, 0x00ff00);
@@ -147,6 +156,8 @@ class TestLayer extends tutils.Layer {
 		// top
 		shape = new p2.Plane();
         body.addShape(shape, [0, this.yEgretToP2(-h)], 180/tutils.DegPerRad); 
+		shape.collisionGroup = this.groupBounds;
+		shape.collisionMask = this.groupBall;
 		obj = new egret.Shape();
 		this.addChild(obj);
 		obj.graphics.lineStyle(3, 0x00ff00);
@@ -188,6 +199,9 @@ class TestLayer extends tutils.Layer {
 		let body = new p2.Body({ mass: 1, position: [x2, y2], angularVelocity: 0});
         body.addShape(shape);
         this.world.addBody(body);
+		body.velocity[0] = Math.random() * 20 - 10;
+		shape.collisionGroup = this.groupBall;
+		shape.collisionMask = this.groupBounds;
 
 		let obj = tutils.createBitmapByName("ball_png");
 		this.addChild(obj);

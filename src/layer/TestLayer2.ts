@@ -78,7 +78,7 @@ class TestLayer2 extends tutils.Layer {
 		let r = 40;
 		let speed_x = 0;
 		let speed_y = 0;
-		for( i=1;i<=1;i++)
+		for( i=1;i<=3;i++)
 		{
 			let x = 100*i;
 			let y = 100+i*20;
@@ -140,9 +140,9 @@ class TestLayer2 extends tutils.Layer {
 		if(this.egret_bullets.hasOwnProperty(String(bullet.id)))
 		{
 		 	this.layer.removeChild(this.egret_bullets[String(bullet.id)]);
+			delete this.egret_bullets[String(bullet.id)];
 		}
 
-		this.bullets_to_remove[bullet.id] = bullet;
 		this.world.removeBody(bullet);
 		console.log("onBallBulletHit: remove bullet id " + bullet.id + " end");
 
@@ -158,7 +158,7 @@ class TestLayer2 extends tutils.Layer {
 			this.world.removeBody(ball);
 			//delete this.balls_attr[ball.id];
 			this.createBall(x,y,r/2,speed_x,speed_y,mass,ball_attr.divide_times);
-			this.createBall(x,y,r/2,speed_x,speed_y,mass,ball_attr.divide_times);
+			this.createBall(x+20,y-10,r/2,speed_x,speed_y,mass,ball_attr.divide_times);
 		}
 		else
 		{

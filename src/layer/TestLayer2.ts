@@ -47,49 +47,57 @@ class TestLayer2 extends tutils.Layer {
 		this.initBalls();
 	}
 
-	private createBullet()
+	private createBullet(x:number,y:number)
 	{
-		{
-			let x = 200;
-			let y = 400;
-			let r = 10;
-
-			let speed_x = 0;
-			let speed_y = 0;
+		let r = 10;
+		let mass = 0;
+		let speed_x = 0;
+		let speed_y = 0;
+		let collisionGroup = this.groupBounds;
+		let collisionMask = this.groupBounds|this.groupBall;
 			
-			let egret_ball = this.createDisplayBall(x,y,r);
-			let p2_ball = this.createP2Ball(x,y,r,speed_x,speed_y,egret_ball, 0);
-			p2_ball.velocity[1] = 5;
-			this.egret_bullets[p2_ball.id] = egret_ball;
-			this.p2_bullets[p2_ball.id] = p2_ball;//this.createP2Ball(x,y,r,speed_x,speed_y,egret_ball,0); 
-			this.addChild(egret_ball);
-			this.world.addBody(p2_ball);
-			console.log("bullet created, id:" + p2_ball.id);
-		}
+		let egret_ball = this.createDisplayBall(x,y,r);
+		let p2_ball = this.createP2Ball(x,y,r,speed_x,speed_y,egret_ball, mass,collisionGroup,collisionMask);
+		p2_ball.velocity[1] = 5;
+		this.egret_bullets[p2_ball.id] = egret_ball;
+		this.p2_bullets[p2_ball.id] = p2_ball;
+		this.addChild(egret_ball);
+		this.world.addBody(p2_ball);
+		console.log("bullet created, id:" + p2_ball.id);
+
 	}
 
 	private initBalls()
 	{
 		let i=1;
-		for( i=1;i<=1;i++)
+		let collisionGroup = this.groupBall;
+		let collisionMask = this.groupBounds;
+		let mass = 1;
+		let r = 40;
+		let speed_x = 0;
+		let speed_y = 0;
+		for( i=1;i<=5;i++)
 		{
 			let x = 100*i;
 			let y = 100+i*20;
-			let r = 40;
-
-			let speed_x = 0;
-			let speed_y = 0;
-			
-			let egret_ball = this.createDisplayBall(x,y,r);
-			let p2_ball = this.createP2Ball(x,y,r,speed_x,speed_y,egret_ball, 1);
-			this.egret_balls[p2_ball.id] = egret_ball;
-			this.p2_balls[p2_ball.id] = p2_ball;
-			this.addChild(egret_ball);
-			this.world.addBody(p2_ball);
-			console.log("ball created, id:" + p2_ball.id);
+			this.createBall(x,y,r,speed_x,speed_y,mass);
 		}
+	}
 
+	private createBall(x:number,y:number,r:number,speed_x:number,speed_y:number,mass:number)
+	{
+		let i=1;
+		let collisionGroup = this.groupBall;
+		let collisionMask = this.groupBounds;
 
+		let egret_ball = this.createDisplayBall(x,y,r);
+		let p2_ball = this.createP2Ball(x,y,r,speed_x,speed_y,egret_ball, mass,collisionGroup,collisionMask);
+		this.egret_balls[p2_ball.id] = egret_ball;
+		this.p2_balls[p2_ball.id] = p2_ball;
+		this.addChild(egret_ball);
+		this.world.addBody(p2_ball);
+		console.log("ball created, id:" + p2_ball.id);
+		
 	}
 
 
@@ -102,6 +110,8 @@ class TestLayer2 extends tutils.Layer {
         for (let i=0; i<this.world.bodies.length; i++) {
             let body = this.world.bodies[i];
             let shape = body.shapes[0];
+			
+			
 			if (shape instanceof p2.Box || shape instanceof p2.Circle) {
 				let obj = body.displays[0];
 				obj.x = this.xP2ToEgret(body.position[0]);
@@ -113,6 +123,25 @@ class TestLayer2 extends tutils.Layer {
 			}
 		}
 	}
+	
+	//球和子弹碰
+	private onBallBulletHit(ball:p2.Body,shape_r:number)
+	{
+		let x = this.xP2ToEgret(ball.position[0]);
+		let y = this.yP2ToEgret(ball.position[1]);
+		let r = this.lP2ToEgret(shape_r);
+		console.log("r is " +r);
+
+		//移除显示和物理引擎中的ball
+		this.layer.removeChild(this.egret_balls[ball.id]);
+		this.world.removeBody(ball);
+
+		//分裂两个
+		let speed_x = 1;
+		let speed_y = 0;
+		let mass = 1;
+		this.createBall(x,y,r/2,speed_x,speed_y,mass);
+	}
 
         // beginContactEvent: {
         //     type: string;
@@ -123,101 +152,67 @@ class TestLayer2 extends tutils.Layer {
         //     contactEquations: ContactEquation[];
         // };
 	private onBeginContact(event):void{
-		console.log("onBeginContact, event.bodyA.id: " + event.bodyA.id);
-		console.log("onBeginContact, event.bodyB.id: " + event.bodyB.id);
+		//console.log("onBeginContact, event.bodyA.id: " + event.bodyA.id);
+		//console.log("onBeginContact, event.bodyB.id: " + event.bodyB.id);
 		//找到对应的display对象， 从屏幕中去除
-		let  idA = String(event.bodyA.id);
-		let  idB = String(event.bodyB.id);
-		let hasA = this.egret_balls.hasOwnProperty((idA));
-		let hasB = this.egret_balls.hasOwnProperty((idB));
 
-		console.log("onBeginContact, idA: " + idA);
-		console.log("onBeginContact, idB: " + idB);
-		console.log("onBeginContact, hasA: " + hasA);
-		console.log("onBeginContact, hasB: " + hasB);
+		//两种情况：
+		//1. 球和地碰
+		//2. 球和子弹碰
+		let bodyA = event.bodyA;
+		let bodyB = event.bodyB;
+		
+		let shapeA = event.shapeA;
+		let shapeB = event.shapeB;
 
-		// if(hasA)
-		// {
-		// 	this.layer.removeChild(this.egret_balls[event.bodyA.id]);
-		// 	delete this.egret_balls[event.bodyA.id];
+		let idA = String(bodyA.id);
+		let idB = String(bodyB.id);
 
-		// }
-		// if(hasB)
-		// {
-		// 	this.layer.removeChild(this.egret_balls[event.bodyB.id]);
-		// 	delete this.egret_balls[event.bodyB.id];
-		// }
+		
+		let isAGround = shapeA.collisionGroup == this.groupBounds && shapeA.collisionMask ==  this.groupBall; //A是否是地面
+		let isBGround = shapeB.collisionGroup == this.groupBounds && shapeB.collisionMask ==  this.groupBall; //B是否是地面
+
+		if(isAGround || isBGround)
+		{
+			//1. 球和地碰
+		}
+		else
+		{
+			//2. 球和子弹碰
+			let hasA = this.p2_balls.hasOwnProperty((idA));
+			
+			if(hasA)
+			{
+				//A是球,B是子弹
+				let ball = this.p2_balls[idA];
+				let shape_r = event.shapeA.radius;
+				this.onBallBulletHit(ball,shape_r);
+			}
+			else
+			{
+				//A是子弹，B是球
+				let ball = this.p2_balls[idB];
+				let shape_r = event.shapeB.radius;
+				this.onBallBulletHit(ball,shape_r);
+
+			}
+		}
 	}
 
 	private onTouchBegin(evt: egret.TouchEvent): void {
 		console.log("touch begin:" + "x:" + evt.localX + ",y:" + evt.localY);
-		this.createBullet();
+		this.createBullet(evt.localX,this.stage.stageHeight);
 
 	}
 
 	private onTouchMove(evt: egret.TouchEvent): void
 	{
 		console.log("touch move:" + "x:" + evt.localX + ",y:" + evt.localY);
-		// this.obj.x = evt.localX;
-		// this.obj.y = evt.localY;
-		// let now_tick = egret.getTimer();
-
-
-		// let duration = now_tick - this.last_tick;
-		// if(duration < 50)
-		// {
-		// 	return ;
-		// }
-		// this.last_tick = now_tick;
-
-		// this.speed_x = (evt.localX- this.lastx)/duration;
-		// this.speed_y = (evt.localY- this.lasty)/duration;
-
-		// this.lastx = evt.localX;
-		// this.lasty = evt.localY;
-
-		
-		// const r = 50;
-		// let x2 = this.xEgretToP2(x);
-		// let y2 = this.yEgretToP2(y);
-		// let r2 = this.lEgretToP2(r);
-        // let shape = new p2.Circle({ radius: r2 });
-		// let body = new p2.Body({ mass: 1, position: [x2, y2], angularVelocity: 0});
-        // body.addShape(shape);
-        // this.world.addBody(body);
-		// body.velocity[0] = Math.random() * 20 - 10;
-		// body.velocity[0] = 0;
-		// shape.collisionGroup = this.groupBall;
-		// shape.collisionMask = this.groupBounds;
-		// let obj = tutils.createBitmapByName("ball_png");
-		// this.addChild(obj);
-		// obj.width = r * 2;
-		// obj.height = r * 2;
-		// obj.anchorOffsetX = obj.width / 2;
-		// obj.anchorOffsetY = obj.height / 2;
-		// obj.x = x;
-		// obj.y = y;
-
-		// body.displays = [obj];
 	}
 
 	private onTouchEnd(evt: egret.TouchEvent): void
 	{
-		// console.log("touch end:" + "x:" + evt.localX + ",y:" + evt.localY);
-		// const r = 50;
-		// let x2 = this.xEgretToP2(evt.localX);
-		// let y2 = this.yEgretToP2(evt.localY);
-		// let r2 = this.lEgretToP2(r);
-        // let shape = new p2.Circle({ radius: r2 });
-		// let body = new p2.Body({ mass: 1, position: [x2, y2], angularVelocity: 0});
-        // body.addShape(shape);
-        // this.world.addBody(body);
-		// //body.velocity[0] = Math.random() * 20 - 10;//need  multipy 1000
-		// body.velocity[0] = this.xEgretToP2(this.speed_x)*1000;
-		// body.velocity[1] = this.yEgretToP2(this.speed_y)*1000;
-		// shape.collisionGroup = this.groupBall;
-		// shape.collisionMask = this.groupBounds;
-		// body.displays = [this.obj];
+
 	}
 	
 	
@@ -336,7 +331,7 @@ class TestLayer2 extends tutils.Layer {
 
 		body.displays = [obj];
 	}
-	private createP2Ball(x:number,y:number,r:number,speed_x:number,speed_y:number,egret_ball:egret.DisplayObject,mass:number): p2.Body
+	private createP2Ball(x:number,y:number,r:number,speed_x:number,speed_y:number,egret_ball:egret.DisplayObject,mass:number,collisionGroup:number,collisionMask:number): p2.Body
 	{
 		let x2 = this.xEgretToP2(x);
 		let y2 = this.yEgretToP2(y);
@@ -347,10 +342,9 @@ class TestLayer2 extends tutils.Layer {
 		body.velocity[0] = this.xEgretToP2(speed_x)*1000;
 		body.velocity[1] = this.yEgretToP2(speed_y)*1000;
 		
-		// body.gravityScale = gravityScale;
-		// body.force=[0,800];		
-		shape.collisionGroup = this.groupBall;
-		shape.collisionMask = this.groupBounds;
+	
+		shape.collisionGroup = collisionGroup;
+		shape.collisionMask = collisionMask;
 		body.displays = [egret_ball];
 		return body;
 	}

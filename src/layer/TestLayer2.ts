@@ -1,24 +1,27 @@
+class BallAttribute
+{
+	divide_times: number;
+	public constructor(divide_times:number)
+	{
+		this.divide_times = divide_times;
+	}
+}
+
 class TestLayer2 extends tutils.Layer {
 	world: p2.World;
 	factor: number = 100;
 	tick: number;
 	readonly groupBounds = 1 << 1;
 	readonly groupBall = 1 << 2;
-	obj: egret.DisplayObject;
-
-	lastx: number;
-	lasty: number;
-	last_tick: number;
-	speed_x :number;
-	speed_y :number;
-	current_id :number;
-
 
     egret_balls:Object = {}; //DisplayObject
  	p2_balls: Object = {};   //p2.Body
+	balls_attr: {[id: string]: BallAttribute} = {};
 
 	egret_bullets:Object = {};//DisplayObject
     p2_bullets: {[id: string]: p2.Body} = {};   //p2.Body
+
+	
 
 	// override
 	protected onCfgStage(): void {
@@ -43,7 +46,6 @@ class TestLayer2 extends tutils.Layer {
 		this.layer.addEventListener(egret.TouchEvent.TOUCH_MOVE, this.onTouchMove, this);
 		this.layer.addEventListener(egret.TouchEvent.TOUCH_END, this.onTouchEnd, this);
 
-		this.current_id = 0;
 		this.initBalls();
 	}
 
@@ -80,11 +82,11 @@ class TestLayer2 extends tutils.Layer {
 		{
 			let x = 100*i;
 			let y = 100+i*20;
-			this.createBall(x,y,r,speed_x,speed_y,mass);
+			this.createBall(x,y,r,speed_x,speed_y,mass,0);
 		}
 	}
 
-	private createBall(x:number,y:number,r:number,speed_x:number,speed_y:number,mass:number)
+	private createBall(x:number,y:number,r:number,speed_x:number,speed_y:number,mass:number,divide_times:number)
 	{
 		let i=1;
 		let collisionGroup = this.groupBall;
@@ -94,6 +96,8 @@ class TestLayer2 extends tutils.Layer {
 		let p2_ball = this.createP2Ball(x,y,r,speed_x,speed_y,egret_ball, mass,collisionGroup,collisionMask);
 		this.egret_balls[p2_ball.id] = egret_ball;
 		this.p2_balls[p2_ball.id] = p2_ball;
+
+		this.balls_attr[p2_ball.id] = new BallAttribute(divide_times);
 		this.addChild(egret_ball);
 		this.world.addBody(p2_ball);
 		console.log("ball created, id:" + p2_ball.id);
@@ -125,37 +129,40 @@ class TestLayer2 extends tutils.Layer {
 	}
 	
 	//球和子弹碰
-	private onBallBulletHit(ball:p2.Body,shape_r:number)
+	private onBallBulletHit(bullet:p2.Body,ball:p2.Body,shape_r:number,ball_attr:BallAttribute)
 	{
 		let x = this.xP2ToEgret(ball.position[0]);
 		let y = this.yP2ToEgret(ball.position[1]);
 		let r = this.lP2ToEgret(shape_r);
-		console.log("r is " +r);
 
-		//移除显示和物理引擎中的ball
-		this.layer.removeChild(this.egret_balls[ball.id]);
-		this.world.removeBody(ball);
 
-		//分裂两个
+
+		//移除bullet
+		this.layer.removeChild(this.egret_bullets[bullet.id]);
+		this.world.removeBody(bullet);
+
 		let speed_x = 1;
 		let speed_y = 0;
 		let mass = 1;
-		this.createBall(x,y,r/2,speed_x,speed_y,mass);
+
+		if(ball_attr.divide_times < 2)
+		{
+			//球分裂的情况，将原来的去掉，再创建两个
+			ball_attr.divide_times++;
+			this.layer.removeChild(this.egret_balls[ball.id]);
+			this.world.removeBody(ball);
+			//delete this.balls_attr[ball.id];
+			this.createBall(x,y,r/2,speed_x,speed_y,mass,ball_attr.divide_times);
+			this.createBall(x,y,r/2,speed_x,speed_y,mass,ball_attr.divide_times);
+		}
+		else
+		{
+			//球不再分裂
+		}
+		
 	}
 
-        // beginContactEvent: {
-        //     type: string;
-        //     shapeA: Shape;
-        //     shapeB: Shape;
-        //     bodyA: Body;
-        //     bodyB: Body;
-        //     contactEquations: ContactEquation[];
-        // };
 	private onBeginContact(event):void{
-		//console.log("onBeginContact, event.bodyA.id: " + event.bodyA.id);
-		//console.log("onBeginContact, event.bodyB.id: " + event.bodyB.id);
-		//找到对应的display对象， 从屏幕中去除
-
 		//两种情况：
 		//1. 球和地碰
 		//2. 球和子弹碰
@@ -185,16 +192,20 @@ class TestLayer2 extends tutils.Layer {
 			{
 				//A是球,B是子弹
 				let ball = this.p2_balls[idA];
+				let bullet = this.p2_bullets[idB];
 				let shape_r = event.shapeA.radius;
-				this.onBallBulletHit(ball,shape_r);
+				let ball_attr = this.balls_attr[idA];
+				this.onBallBulletHit(bullet,ball,shape_r,ball_attr);
 			}
 			else
 			{
 				//A是子弹，B是球
 				let ball = this.p2_balls[idB];
+				let bullet = this.p2_bullets[idA];
 				let shape_r = event.shapeB.radius;
-				this.onBallBulletHit(ball,shape_r);
+				let ball_attr = this.balls_attr[idB];
 
+				this.onBallBulletHit(bullet,ball,shape_r,ball_attr);
 			}
 		}
 	}

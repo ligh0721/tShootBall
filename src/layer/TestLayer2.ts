@@ -21,7 +21,7 @@ class TestLayer2 extends tutils.Layer {
 	egret_bullets:Object = {};//DisplayObject
     p2_bullets: {[id: string]: p2.Body} = {};   //p2.Body
 
-	
+	bullets_to_remove:Object = {};
 
 	// override
 	protected onCfgStage(): void {
@@ -78,7 +78,7 @@ class TestLayer2 extends tutils.Layer {
 		let r = 40;
 		let speed_x = 0;
 		let speed_y = 0;
-		for( i=1;i<=5;i++)
+		for( i=1;i<=1;i++)
 		{
 			let x = 100*i;
 			let y = 100+i*20;
@@ -101,7 +101,6 @@ class TestLayer2 extends tutils.Layer {
 		this.addChild(egret_ball);
 		this.world.addBody(p2_ball);
 		console.log("ball created, id:" + p2_ball.id);
-		
 	}
 
 
@@ -109,6 +108,7 @@ class TestLayer2 extends tutils.Layer {
 		let mx = this.xEgretToP2(this.stage.stageWidth/2);
 		let my = this.yEgretToP2(this.stage.stageHeight/2);
 
+		
 		this.world.step(1/this.stage.frameRate);
 		
         for (let i=0; i<this.world.bodies.length; i++) {
@@ -135,11 +135,16 @@ class TestLayer2 extends tutils.Layer {
 		let y = this.yP2ToEgret(ball.position[1]);
 		let r = this.lP2ToEgret(shape_r);
 
-
-
 		//移除bullet
-		this.layer.removeChild(this.egret_bullets[bullet.id]);
+		console.log("onBallBulletHit: remove bullet id " + bullet.id + " begin");
+		if(this.egret_bullets.hasOwnProperty(String(bullet.id)))
+		{
+		 	this.layer.removeChild(this.egret_bullets[String(bullet.id)]);
+		}
+
+		this.bullets_to_remove[bullet.id] = bullet;
 		this.world.removeBody(bullet);
+		console.log("onBallBulletHit: remove bullet id " + bullet.id + " end");
 
 		let speed_x = 1;
 		let speed_y = 0;
@@ -175,6 +180,7 @@ class TestLayer2 extends tutils.Layer {
 		let idA = String(bodyA.id);
 		let idB = String(bodyB.id);
 
+
 		
 		let isAGround = shapeA.collisionGroup == this.groupBounds && shapeA.collisionMask ==  this.groupBall; //A是否是地面
 		let isBGround = shapeB.collisionGroup == this.groupBounds && shapeB.collisionMask ==  this.groupBall; //B是否是地面
@@ -185,6 +191,8 @@ class TestLayer2 extends tutils.Layer {
 		}
 		else
 		{
+			console.log("onBeginContact: bodyA.id is " + bodyA.id + ", bodyB.id is " + bodyB.id);
+
 			//2. 球和子弹碰
 			let hasA = this.p2_balls.hasOwnProperty((idA));
 			
@@ -210,6 +218,17 @@ class TestLayer2 extends tutils.Layer {
 		}
 	}
 
+	private onEndContact(event):void{
+	
+		// endContactEvent: {
+        //     type: string;
+        //     shapeA: Shape;
+        //     shapeB: Shape;
+        //     bodyA: Body;
+        //     bodyB: Body;
+        // };
+	}
+
 	private onTouchBegin(evt: egret.TouchEvent): void {
 		console.log("touch begin:" + "x:" + evt.localX + ",y:" + evt.localY);
 		this.createBullet(evt.localX,this.stage.stageHeight);
@@ -218,7 +237,7 @@ class TestLayer2 extends tutils.Layer {
 
 	private onTouchMove(evt: egret.TouchEvent): void
 	{
-		console.log("touch move:" + "x:" + evt.localX + ",y:" + evt.localY);
+		//console.log("touch move:" + "x:" + evt.localX + ",y:" + evt.localY);
 	}
 
 	private onTouchEnd(evt: egret.TouchEvent): void

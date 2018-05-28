@@ -100,7 +100,8 @@ class Main extends eui.UILayer {
      */
     protected createGameScene(): void {
         // tutils.Layer.createAt(TestLayer, this);
-        tutils.Layer.createAt(TestLayer2, this);
+        //tutils.Layer.createAt(TestLayer2, this);
+        tutils.Layer.createAt(TestLayer4, this);
     }
     /**
      * 根据name关键字创建一个Bitmap对象。name属性请参考resources/resource.json配置文件的内容。

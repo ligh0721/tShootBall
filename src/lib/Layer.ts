@@ -21,6 +21,10 @@ module tutils {
 			return this.layer.addChild(child);
 		}
 
+		public removeChild(child: egret.DisplayObject): egret.DisplayObject {
+			return this.layer.removeChild(child);
+		}
+
 		public create(): egret.Sprite {
 			this.onCfgStage();
 			console.log("stage size: "+this.stage.stageWidth+"x"+this.stage.stageHeight);

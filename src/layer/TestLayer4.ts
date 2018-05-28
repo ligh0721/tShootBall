@@ -192,8 +192,11 @@ class TestLayer4 extends tutils.Layer {
 
 	// override
 	protected onInit(): void {
-		let bg = tutils.createBitmapByName("wings_bg_png");
-		this.addChild(bg);
+		let bgCtrl = new tutils.BackgroundController(this.stage.stageWidth, this.stage.stageHeight, "wings_bg_png").create();
+		this.addChild(bgCtrl.gameObject);
+		bgCtrl.start(15);
+		// let bg = tutils.createBitmapByName("wings_bg_png");
+		// this.addChild(bg);
 
 		this.layer.touchEnabled = true;
 

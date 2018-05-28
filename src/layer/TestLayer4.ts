@@ -216,11 +216,11 @@ class TestLayer4 extends tutils.Layer {
 
 	// override
 	protected onInit(): void {
-		//let bgCtrl = new tutils.BackgroundController(this.stage.stageWidth, this.stage.stageHeight, "wings_bg_png").create();
-		//this.addChild(bgCtrl.gameObject);
-		//bgCtrl.start(15);
-		let bg = tutils.createBitmapByName("wings_bg_png");
-		this.addChild(bg);
+		let bgCtrl = new tutils.BackgroundController(this.stage.stageWidth, this.stage.stageHeight, "wings_bg_png").create();
+		this.addChild(bgCtrl.gameObject);
+		bgCtrl.start(15);
+		// let bg = tutils.createBitmapByName("wings_bg_png");
+		// this.addChild(bg);
 
 		this.layer.touchEnabled = true;
 
@@ -252,7 +252,7 @@ class TestLayer4 extends tutils.Layer {
         let dt = current_time - this.m_last_tick_time;
         this.m_last_tick_time = current_time;
 
-        let dty = 30;
+        let dty = 15;
 
 		for (let i=0; i<this.m_balls.length; i++) {
 			let dstX = i===0 ? this.m_dst_x : this.m_balls[i-1].x;
@@ -271,7 +271,7 @@ class TestLayer4 extends tutils.Layer {
 	}
 
     private calcV(d: number): number {
-        let v = Math.log(d*0.01+1);
+        let v = Math.log(d*0.02+1);
         return v;
     }
 
@@ -298,8 +298,8 @@ class TestLayer4 extends tutils.Layer {
 	private createDisplayBall(x: number, y: number, r:number): egret.DisplayObject {
 		//let obj = tutils.createBitmapByName("ball_png");
 		let obj = tutils.createBitmapByName("hero_png");
+		obj.height = r * 2 * obj.height / obj.width;
 		obj.width = r * 2;
-		obj.height = r * 2;
 		obj.anchorOffsetX = obj.width / 2;
 		obj.anchorOffsetY = obj.height / 2;
 		obj.x = x;

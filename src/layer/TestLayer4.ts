@@ -171,6 +171,30 @@ class BirdsManager{
 		
 }
 
+class HPDisplay
+{
+	m_layer:tutils.Layer;
+	m_hp:number;
+	m_display:egret.DisplayObject;
+	public init(layer:tutils.Layer)
+	{
+		this.m_layer = layer;
+	}
+
+	public setHP(hp:number)
+	{
+		this.m_hp = hp;
+	}
+	public getHP() :number
+	{
+		return this.m_hp;
+	}
+
+	private create() {
+
+	}
+}
+
 
 class TestLayer4 extends tutils.Layer {
 	
@@ -192,11 +216,11 @@ class TestLayer4 extends tutils.Layer {
 
 	// override
 	protected onInit(): void {
-		let bgCtrl = new tutils.BackgroundController(this.stage.stageWidth, this.stage.stageHeight, "wings_bg_png").create();
-		this.addChild(bgCtrl.gameObject);
-		bgCtrl.start(15);
-		// let bg = tutils.createBitmapByName("wings_bg_png");
-		// this.addChild(bg);
+		//let bgCtrl = new tutils.BackgroundController(this.stage.stageWidth, this.stage.stageHeight, "wings_bg_png").create();
+		//this.addChild(bgCtrl.gameObject);
+		//bgCtrl.start(15);
+		let bg = tutils.createBitmapByName("wings_bg_png");
+		this.addChild(bg);
 
 		this.layer.touchEnabled = true;
 

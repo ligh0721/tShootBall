@@ -42,9 +42,20 @@ class Hero {
 		this.m_hp += 10;
 	}
 
+	public onBeingAttacked(index:number)
+	{
+		console.log("the " + index +"th bird was attacked");
+		this.m_hp -= 1;
+	}
+
 	public getLeaderDisplay():egret.DisplayObject
 	{
 		return this.m_displays[0];
+	}
+
+	public getDisplays():egret.DisplayObject[]
+	{
+		return this.m_displays;
 	}
 
 	public setDestX(x:number)

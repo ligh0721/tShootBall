@@ -1,7 +1,7 @@
 enum FlyBehavior
 {
 	ORANGE_BIRD_BEGIN,
-	O_FLY_STRAIGHT_DOWN, //垂直向下
+	O_FLY_STRAIGHT_DOWN = ORANGE_BIRD_BEGIN, //垂直向下
 	O_FLY_DOWN_RANDOM_LR,    //向下的同时， 随机左右摇摆(仅用于橙色的鸟)
 	ORANGE_BIRD_END,
 

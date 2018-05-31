@@ -43,15 +43,16 @@ class TestLayer4 extends tutils.Layer {
 
 		//碰撞检测：头雁和蓝色大雁、 头雁和宝物、 雁子队列和橙色敌雁
 
-		this.handleCollision();
+		this.handleCollisionBlue();
+		this.handleCollisionOrange();
+
 
 		this.m_progress.percent = this.m_hero.getHP()/100;
 		
 	}
 
-	private handleCollision()
+	private handleCollisionBlue()
 	{
-		//此处的代码逻辑是：头雁和蓝色大雁相交时，英雄吃蓝色大雁，而birds_manager减去相应大雁
 		let leader = this.m_hero.getLeaderDisplay();
 		let rect = new egret.Rectangle(leader.x,leader.y,leader.width,leader.height);
 
@@ -60,6 +61,20 @@ class TestLayer4 extends tutils.Layer {
 		{
 			this.m_hero.eatBird(new_birds[i]);
 		}
+	}
+
+	private handleCollisionOrange()
+	{
+		let birds_indexes = this.m_birds_manager.intersectOrange(this.m_hero);
+
+		if(birds_indexes.length > 0)
+		{
+			for(let i=0;i<birds_indexes.length;i++)
+			{
+				this.m_hero.onBeingAttacked(birds_indexes[i]);
+			}
+		}
+
 	}
 
 	private onTouchBegin(evt: egret.TouchEvent): void {
